@@ -52,10 +52,6 @@
                 <h2 class="text-center">Meteo di Torino</h2>
                 <div id="loading" class="text-center">Caricamento meteo...</div>
                 <div id="weather-data" class="weather-info" style="display:none;">
-                    <div id="temperature" class="alert alert-info"></div>
-                    <div id="humidity" class="alert alert-warning"></div>
-                    <div id="precipitation" class="alert alert-success"></div>
-
                     <!-- Tabella dei dati giornalieri -->
                     <table class="table table-striped">
                         <thead>
@@ -225,6 +221,11 @@
         }
 
         // Esegui la funzione quando la pagina è pronta
+        window.onload = fetchWeather;
+    </script>
+
+</body>
+</html>
         window.onload = fetchWeather;
     </script>
 
