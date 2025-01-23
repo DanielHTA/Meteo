@@ -92,6 +92,7 @@
         let latitude = 45.0705; // default: Torino
         let longitude = 7.6868; // default: Torino
         let locationName = "Torino";
+        let weatherChartInstance = null; // Variabile per il grafico
 
         // Funzione per aggiornare le coordinate in base al nome del luogo
         async function updateCoordinatesFromLocation(location) {
@@ -166,9 +167,14 @@
                     tableContent += `<tr><td>${day.date}</td><td>${day.avgTemp.toFixed(2)}°C</td><td>${day.avgHumidity.toFixed(2)}%</td><td>${day.totalPrecip.toFixed(2)} mm</td><td>${day.weatherDescription}</td></tr>`;
                 });
                 document.getElementById('weather-table').innerHTML = tableContent;
-                
+
+                // Se il grafico esiste già, distruggilo prima di crearne uno nuovo
+                if (weatherChartInstance) {
+                    weatherChartInstance.destroy();
+                }
+
                 const ctx = document.getElementById('weatherChart').getContext('2d');
-                new Chart(ctx, {
+                weatherChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: dailyData.map(day => day.date),
@@ -178,7 +184,14 @@
                             { label: 'Precipitazioni Totali (mm)', data: dailyData.map(day => day.totalPrecip), borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', fill: true, borderWidth: 2 }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Giorno' } }, y: { title: { display: true, text: 'Valore' }, beginAtZero: false } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        scales: { 
+                            x: { title: { display: true, text: 'Giorno' } }, 
+                            y: { title: { display: true, text: 'Valore' }, beginAtZero: false } 
+                        }
+                    }
                 });
             } catch (error) {
                 console.error('Errore nel recupero dei dati meteo:', error);
