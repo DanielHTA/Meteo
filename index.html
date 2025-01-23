@@ -72,6 +72,7 @@
                             <th>Temperatura Media (°C)</th>
                             <th>Umidità Media (%)</th>
                             <th>Precipitazioni Totali (mm)</th>
+                            <th>Condizione Meteo</th>
                         </tr>
                     </thead>
                     <tbody id="weather-table"></tbody>
@@ -112,21 +113,60 @@
             }
         }
 
+        // Mappatura dei codici meteo a descrizioni testuali
+        const weatherDescriptions = {
+            0: 'Soleggiato',       // Clear sky
+            1: 'Poco nuvoloso',    // Mainly clear
+            2: 'Nuvoloso',         // Partly cloudy
+            3: 'Nuvoloso',         // Overcast
+            45: 'Nebbia',          // Fog
+            48: 'Nebbia ghiacciata', // Freezing fog
+            51: 'Piovoso leggero',  // Light rain
+            53: 'Piovoso moderato', // Moderate rain
+            55: 'Piovoso intenso',   // Heavy rain
+            56: 'Piovoso gelato',   // Freezing rain
+            57: 'Piovoso gelato',   // Freezing rain
+            61: 'Pioggia intermittente', // Showers (rain)
+            63: 'Pioggia moderata',    // Moderate showers (rain)
+            65: 'Pioggia forte',    // Heavy showers (rain)
+            66: 'Pioggia gelata',   // Freezing showers (rain)
+            67: 'Pioggia gelata',   // Freezing showers (rain)
+            71: 'Neve leggera',     // Light snow
+            73: 'Neve moderata',    // Moderate snow
+            75: 'Neve intensa',     // Heavy snow
+            77: 'Neve a fiocchi',   // Snow grains
+            80: 'Rovesci di pioggia leggeri', // Light rain showers
+            81: 'Rovesci di pioggia moderati', // Moderate rain showers
+            82: 'Rovesci di pioggia forti',   // Heavy rain showers
+            85: 'Neve da rovesci leggeri',    // Light snow showers
+            86: 'Neve da rovesci forti',      // Heavy snow showers
+            95: 'Temporali',         // Thunderstorm
+            96: 'Temporale con grandine leggera', // Thunderstorm with light hail
+            99: 'Temporale con grandine forte'  // Thunderstorm with heavy hail
+        };
+
         // Funzione per recuperare i dati meteo
         async function fetchWeather() {
             const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code&timezone=Europe%2FRome`;
             try {
                 const response = await fetch(apiUrl);
                 const data = await response.json();
-                const dailyData = groupDataByDay(data.hourly.time, data.hourly.temperature_2m, data.hourly.relative_humidity_2m, data.hourly.precipitation);
+                const dailyData = groupDataByDay(
+                    data.hourly.time, 
+                    data.hourly.temperature_2m, 
+                    data.hourly.relative_humidity_2m, 
+                    data.hourly.precipitation,
+                    data.hourly.weather_code
+                );
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('weather-data').style.display = 'block';
                 document.getElementById('location-name').textContent = `Meteo per: ${locationName}`;
                 let tableContent = '';
                 dailyData.forEach(day => {
-                    tableContent += `<tr><td>${day.date}</td><td>${day.avgTemp.toFixed(2)}°C</td><td>${day.avgHumidity.toFixed(2)}%</td><td>${day.totalPrecip.toFixed(2)} mm</td></tr>`;
+                    tableContent += `<tr><td>${day.date}</td><td>${day.avgTemp.toFixed(2)}°C</td><td>${day.avgHumidity.toFixed(2)}%</td><td>${day.totalPrecip.toFixed(2)} mm</td><td>${day.weatherDescription}</td></tr>`;
                 });
                 document.getElementById('weather-table').innerHTML = tableContent;
+                
                 const ctx = document.getElementById('weatherChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'line',
@@ -147,22 +187,37 @@
         }
 
         // Funzione per raggruppare i dati per giorno
-        function groupDataByDay(times, temperatures, humidity, precipitation) {
+        function groupDataByDay(times, temperatures, humidity, precipitation, weatherCodes) {
             const dailyData = [];
-            let currentDay = '', tempSum = 0, humiditySum = 0, precipSum = 0, count = 0;
+            let currentDay = '', tempSum = 0, humiditySum = 0, precipSum = 0, count = 0, firstWeatherCode = '';
+            
             for (let i = 0; i < times.length; i++) {
                 const day = times[i].split('T')[0];
                 if (day !== currentDay && count > 0) {
-                    dailyData.push({ date: currentDay, avgTemp: tempSum / count, avgHumidity: humiditySum / count, totalPrecip: precipSum });
+                    dailyData.push({ 
+                        date: currentDay, 
+                        avgTemp: tempSum / count, 
+                        avgHumidity: humiditySum / count, 
+                        totalPrecip: precipSum, 
+                        weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto'
+                    });
                     tempSum = humiditySum = precipSum = count = 0;
                 }
                 currentDay = day;
                 tempSum += temperatures[i];
                 humiditySum += humidity[i];
                 precipSum += precipitation[i];
+                if (count === 0) firstWeatherCode = weatherCodes[i]; // Prende il primo codice meteo per il giorno
                 count++;
             }
-            if (count > 0) dailyData.push({ date: currentDay, avgTemp: tempSum / count, avgHumidity: humiditySum / count, totalPrecip: precipSum });
+            if (count > 0) dailyData.push({ 
+                date: currentDay, 
+                avgTemp: tempSum / count, 
+                avgHumidity: humiditySum / count, 
+                totalPrecip: precipSum, 
+                weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto' 
+            });
+
             return dailyData;
         }
 
