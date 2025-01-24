@@ -71,9 +71,17 @@ async function fetchWeather() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('weather-data').style.display = 'block';
         document.getElementById('location-name').textContent = `Meteo per: ${locationName}`;
+        
         let tableContent = '';
         dailyData.forEach(day => {
-            tableContent += `<tr><td>${day.date}</td><td>${day.avgTemp.toFixed(2)}°C</td><td>${day.avgHumidity.toFixed(2)}%</td><td>${day.totalPrecip.toFixed(2)} mm</td><td>${day.weatherDescription}</td></tr>`;
+            const iconUrl = getWeatherDescription(day.weatherCode);  // Usa la funzione per l'icona
+            tableContent += `<tr>
+                <td>${day.date}</td>
+                <td>${day.avgTemp.toFixed(2)}°C</td>
+                <td>${day.avgHumidity.toFixed(2)}%</td>
+                <td>${day.totalPrecip.toFixed(2)} mm</td>
+                <td>${day.weatherDescription} <img src="${iconUrl}" alt="Weather icon" style="width: 50px; height: 50px; filter: brightness(0.798453);"></td>
+            </tr>`;
         });
         document.getElementById('weather-table').innerHTML = tableContent;
 
@@ -121,7 +129,8 @@ function groupDataByDay(times, temperatures, humidity, precipitation, weatherCod
                 avgTemp: tempSum / count, 
                 avgHumidity: humiditySum / count, 
                 totalPrecip: precipSum, 
-                weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto'
+                weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto',
+                weatherCode: firstWeatherCode
             });
             tempSum = humiditySum = precipSum = count = 0;
         }
@@ -137,10 +146,48 @@ function groupDataByDay(times, temperatures, humidity, precipitation, weatherCod
         avgTemp: tempSum / count, 
         avgHumidity: humiditySum / count, 
         totalPrecip: precipSum, 
-        weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto' 
+        weatherDescription: weatherDescriptions[firstWeatherCode] || 'Sconosciuto',
+        weatherCode: firstWeatherCode 
     });
 
     return dailyData;
+}
+
+// Funzione per ottenere la descrizione meteo in base al codice
+function getWeatherDescription(code) {
+    const weatherMap = {
+        0: '01d', // Clear sky
+        1: '02d', // Mainly clear
+        2: '02d', // Partly cloudy
+        3: '03d', // Overcast
+        45: '50d', // Fog
+        48: '50d', // Freezing fog
+        51: '10d', // Light rain
+        53: '10d', // Moderate rain
+        55: '10d', // Heavy rain
+        56: '10d', // Freezing rain
+        57: '10d', // Freezing rain
+        61: '09d', // Showers (rain)
+        63: '09d', // Moderate showers (rain)
+        65: '09d', // Heavy showers (rain)
+        66: '09d', // Freezing showers (rain)
+        67: '09d', // Freezing showers (rain)
+        71: '13d', // Light snow
+        73: '13d', // Moderate snow
+        75: '13d', // Heavy snow
+        77: '13d', // Snow grains
+        80: '09d', // Light rain showers
+        81: '09d', // Moderate rain showers
+        82: '09d', // Heavy rain showers
+        85: '13d', // Light snow showers
+        86: '13d', // Heavy snow showers
+        95: '11d', // Thunderstorm
+        96: '11d', // Thunderstorm with light hail
+        99: '11d'  // Thunderstorm with heavy hail
+    };
+    const icon = weatherMap[code];
+    
+    return icon ? `https://openweathermap.org/img/wn/${icon}@2x.png` : 'Errore'; // Default error handling
 }
 
 // Evento per l'aggiornamento delle coordinate quando si clicca "Aggiorna Meteo"
